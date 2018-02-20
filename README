@@ -1,3 +1,8 @@
+Simple Motorola Quik-Call II decoder
+
+This simple program will process a raw audio file with the Goertzel algorithm, and look for the tones hard-coded into it.
+If it finds the tones, it will return 1 and print a message.
+
 I DO NOT TRUST THIS PROGRAM AS IT NOW STANDS.
 
 I wrote the peak detection code while my brain was foggy, and if it works for you as is, great, but if not, it's not my problem.
