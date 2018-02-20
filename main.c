@@ -148,6 +148,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	fsize = sbuf.st_size;
+	if(fsize == 0)
+	{
+		printf("Empty file\n");
+		return 0;
+	}
 	mfile = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE|MAP_POPULATE, fd, 0);
 	if(mfile == MAP_FAILED)
 	{
