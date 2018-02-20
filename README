@@ -1,3 +1,10 @@
+I DO NOT TRUST THIS PROGRAM AS IT NOW STANDS.
+
+I wrote the peak detection code while my brain was foggy, and if it works for you as is, great, but if not, it's not my problem.
+
+Go ahead and use it if you want, just remember that. :)
+
+
 To convert a wav file to the proper raw format:
 	sox input.wav -b 16 -r 8000 out.raw
 
