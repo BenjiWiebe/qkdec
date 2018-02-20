@@ -5,10 +5,13 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define SAMP_RATE	8000	//Hz, sampling rate
 #define GBLOCK_N	499		//SAMP_RATE / N: bin width
-#define TARGET		706
+#define TARGET1		706
+#define TARGET2		433
 
 struct goertzel_constants {
 	double cosine;
@@ -82,27 +85,45 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	struct goertzel_constants constants;
-	calculate_constants(706, &constants);
+	struct goertzel_constants constants, constants2;
+	calculate_constants(TARGET1, &constants);
+	calculate_constants(TARGET2, &constants2);
 
-	struct goertzel_runtime runtime = {0};
+	struct goertzel_runtime runtime = {0}, runtime2 = {0};
 	runtime.constants = &constants;
+	runtime2.constants = &constants2;
 
 	// Little-endian 16 bits signed
 
 	int16_t *samp_data = (int16_t*) mfile;
 	size_t num_samples = fsize / sizeof(int16_t);
-	double magnitude = 0;
+
+	// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N
+	size_t num_blocks = num_samples / GBLOCK_N + 1;
+	double *magnitude1 = malloc(num_blocks * sizeof(double));
+	double *magnitude2 = malloc(num_blocks * sizeof(double));
+	size_t mag_index = 0;
+
+	if(magnitude1 == NULL || magnitude2 == NULL)
+	{
+		perror("malloc");
+		return 1;
+	}
 
 	for(size_t i = 0; i < num_samples; i++)
 	{
+		int r = 0;
 		double sample = le16toh(samp_data[i]) / 32768.0;
-		if(run_goertzel(sample, &runtime, &magnitude))
-		{
-			printf("%f\n", (float)magnitude);
-		}
+		// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N within their runtime->constants
+		r = run_goertzel(sample, &runtime, &magnitude1[mag_index]);
+		r = run_goertzel(sample, &runtime2, &magnitude2[mag_index]);
+		if(r) // only increment index if a result was actually written!
+			mag_index++;
 	}
 
+	free(magnitude1);
+	free(magnitude2);
+	close(fd);
 
 	return 0;
 }
