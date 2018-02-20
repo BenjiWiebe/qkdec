@@ -5,11 +5,12 @@ LDFLAGS=-lm
 all: grtz
 
 grtz: main.o
+	gcc main.o -o qkdec $(LDFLAGS)
 
 main.o: main.c
 
 clean:
-	-rm -f grtz *.o
+	-rm -f qkdec *.o
 
 plot:
 	gnuplot-qt -p plot.gp
