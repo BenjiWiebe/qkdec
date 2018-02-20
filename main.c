@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SAMP_RATE	8000	//Hz, sampling rate
-#define GBLOCK_N	499		//SAMP_RATE / N: bin width
+#define SAMP_RATE	8000.0	//Hz, sampling rate
+#define GBLOCK_N	499.0		//SAMP_RATE / N: bin width
 #define TARGET1		706
 #define TARGET2		433
 
@@ -58,6 +58,68 @@ int run_goertzel(double sample, struct goertzel_runtime *rt, double *magnitude)
 		rt->s1 = 0;
 		rt->s2 = 0;
 		rt->i = 0;
+		return 1;
+	}
+	return 0;
+}
+
+#define TONE_LENGTH_ERROR	0.10
+#define DELTA_RING_LEN		5
+#define THRESHOLD			50
+int check_for_tones(double *mag1, int msec1, double *mag2, int msec2, size_t mag_count)
+{
+	//size_t blocks_per_sec = SAMP_RATE / GBLOCK_N + 1;
+	double delta_ring[DELTA_RING_LEN] = {0};
+	int dr_i = 0;
+	int needtone1 = 1, needtone2 = 1;
+	int msecs_per_block = GBLOCK_N / SAMP_RATE * 1000;
+	size_t highn1 = 0, highn2 = 0;
+	for(size_t tmp = 0; tmp < mag_count; tmp++)
+	{
+		double delta = mag1[tmp] - mag2[tmp];
+		delta_ring[dr_i++] = delta;
+		if(dr_i == DELTA_RING_LEN)
+			dr_i = 0;
+		double dr_avg = 0;
+		for(int i = 0; i < DELTA_RING_LEN; i++)
+		{
+			dr_avg += delta_ring[i];
+		}
+		dr_avg = dr_avg / DELTA_RING_LEN;
+		if(fabs(dr_avg) < THRESHOLD)
+		{
+			// a baseline sample causes a reset
+			highn1=highn2=0;
+			continue;
+		}
+		if(dr_avg > 0)
+		{
+			highn1++;
+		}
+		if(dr_avg < 0)
+		{
+			highn2++;
+		}
+		if(highn1 * msecs_per_block > msec1 - msec1 * TONE_LENGTH_ERROR) // If it's no more than TONE_LENGTH_ERROR% shorter, count it as a successful tone detection!
+		{
+			if(needtone1)
+			{
+				printf("TONE 1 DETECTED\n");
+				needtone1 = 0;
+			}
+		}
+		else if(highn2 * msecs_per_block > msec2 - msec2 * TONE_LENGTH_ERROR)
+		{
+			if(needtone2)
+			{
+				printf("TONE 2 DETECTED\n");
+				needtone2 = 0;
+			}
+		}
+	}
+	if(!needtone2 && !needtone1)
+	{
+		printf("BOTH TONES DETECTED!\n");
 		return 1;
 	}
 	return 0;
@@ -133,12 +195,15 @@ int main(int argc, char *argv[])
 			mag_index++;
 	}
 
+	if(check_for_tones(magnitude1, 1000, magnitude2, 3000, mag_index))
+	{
+		printf("Page found in file %s\n", infile);
+		return 1;
+	}
+
 	free(magnitude1);
 	free(magnitude2);
 	close(fd);
 
 	return 0;
 }
-
-
-
