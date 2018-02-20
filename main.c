@@ -13,6 +13,14 @@
 #define TARGET1		706
 #define TARGET2		433
 
+// Set one of these to 1 if you want qkdec to print the magnitude of that signal at the end of each block, i.e. to plot.
+#ifndef DBG_TARGET1
+#  define DBG_TARGET1	0
+#endif
+#ifndef DBG_TARGET2
+#  define DBG_TARGET2	0
+#endif
+
 struct goertzel_constants {
 	double cosine;
 	double sine;
@@ -116,7 +124,11 @@ int main(int argc, char *argv[])
 		double sample = le16toh(samp_data[i]) / 32768.0;
 		// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N within their runtime->constants
 		r = run_goertzel(sample, &runtime, &magnitude1[mag_index]);
+		if(DBG_TARGET1)
+			printf("%f\n", (float)magnitude1[mag_index]);
 		r = run_goertzel(sample, &runtime2, &magnitude2[mag_index]);
+		if(DBG_TARGET2)
+			printf("%f\n", (float)magnitude2[mag_index]);
 		if(r) // only increment index if a result was actually written!
 			mag_index++;
 	}
