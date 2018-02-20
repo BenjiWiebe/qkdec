@@ -18,7 +18,7 @@ plot: run
 page_test.raw: page_test.ogg
 	sox page_test.ogg -b 16 -r 8000 page_test.raw
 
-run: page_test.raw
+run: qkdec page_test.raw
 	./qkdec page_test.raw >page_test.out
 
 test: run plot
