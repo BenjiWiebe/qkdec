@@ -1,0 +1,2 @@
+To convert a wav file to the proper raw format:
+	sox input.wav -b 16 -r 8000 out.raw
