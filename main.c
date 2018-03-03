@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 	if(fsize == 0)
 	{
 		printf("Empty file\n");
-		return 0;
+		return 1;
 	}
 	mfile = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE|MAP_POPULATE, fd, 0);
 	if(mfile == MAP_FAILED)
@@ -205,12 +205,14 @@ int main(int argc, char *argv[])
 	if(check_for_tones(magnitude1, 1000, magnitude2, 3000, mag_index))
 	{
 		printf("Page found in file %s\n", infile);
-		return 1;
+		return 0;
 	}
 
 	free(magnitude1);
 	free(magnitude2);
 	close(fd);
 
-	return 0;
+	// 42 = ENOMSG = "No message of desired type"
+	// Seems appropriate.
+	return 42;
 }
