@@ -191,13 +191,15 @@ int main(int argc, char *argv[])
 		double sample = le16toh(samp_data[i]) / 32768.0;
 		// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N within their runtime->constants
 		r = run_goertzel(sample, &runtime, &magnitude1[mag_index]);
-		if(DBG_TARGET1)
-			printf("%f\n", (float)magnitude1[mag_index]);
 		r = run_goertzel(sample, &runtime2, &magnitude2[mag_index]);
-		if(DBG_TARGET2)
-			printf("%f\n", (float)magnitude2[mag_index]);
-		if(r) // only increment index if a result was actually written!
+		if(r) // only increment index, (print magnitude) if a result was actually written!
+		{
+			if(DBG_TARGET1)
+				printf("%f\n", (float)magnitude1[mag_index]);
+			if(DBG_TARGET2)
+				printf("%f\n", (float)magnitude2[mag_index]);
 			mag_index++;
+		}
 	}
 
 	if(check_for_tones(magnitude1, 1000, magnitude2, 3000, mag_index))
