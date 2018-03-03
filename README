@@ -1,6 +1,6 @@
 Simple Motorola Quik-Call II decoder
 
-This simple program will process a raw audio file with the Goertzel algorithm, and look for the tones hard-coded into it.
+This simple program will process an audio file via libsndfile, and look for the tones hard-coded into it.
 If it finds the tones, it will return 1 and print a message.
 
 I DO NOT TRUST THIS PROGRAM AS IT NOW STANDS.
@@ -9,10 +9,3 @@ I wrote the peak detection code while my brain was foggy, and if it works for yo
 
 Go ahead and use it if you want, just remember that. :)
 
-
-To convert a wav file to the proper raw format:
-	sox input.wav -b 16 -r 8000 out.raw
-
-To convert an ogg file:
-	
-	sox input.ogg -b 16 -r 8000 out.raw

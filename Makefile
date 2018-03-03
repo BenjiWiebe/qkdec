@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -O2 -Wextra -fdiagnostics-color=always
-LDFLAGS=-lm
+CFLAGS=-std=c99 -Wall -O2 -Wextra -fdiagnostics-color=always $(shell pkg-config --cflags sndfile)
+LDFLAGS=-lm $(shell pkg-config --libs sndfile)
 
 all: qkdec
 
@@ -10,16 +10,13 @@ qkdec: main.o
 main.o: main.c
 
 clean:
-	-rm -f qkdec *.o page_test.raw page_test.out
+	-rm -f qkdec *.o
 
 plot: run
 	gnuplot-qt -p -c plot.gp page_test.out
 
-page_test.raw: page_test.ogg
-	sox page_test.ogg -b 16 -r 8000 page_test.raw
-
-run: qkdec page_test.raw
-	-./qkdec page_test.raw >page_test.out
+run: qkdec
+	-./qkdec page_test.ogg >page_test.out
 
 test: run plot
 	

@@ -1,12 +1,13 @@
 #define _XOPEN_SOURCE 500
 #define _GNU_SOURCE
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sndfile.h>
+#include <string.h>
 
 #define SAMP_RATE	8000.0	//Hz, sampling rate
 #define GBLOCK_N	499.0		//SAMP_RATE / N: bin width
@@ -134,29 +135,32 @@ int main(int argc, char *argv[])
 	}
 	char *infile = argv[1];
 	struct stat sbuf;
-	off_t fsize;
-	void *mfile;
-	int fd = open(infile, O_RDONLY);
-	if(fd == -1)
-	{
-		perror("open");
-		return 1;
-	}
-	if(fstat(fd, &sbuf) != 0)
+	if(stat(infile, &sbuf) != 0)
 	{
 		perror("stat");
 		return 1;
 	}
-	fsize = sbuf.st_size;
-	if(fsize == 0)
+	if(sbuf.st_size == 0)
 	{
-		printf("Empty file\n");
+		fprintf(stderr, "File %s is empty.\n", infile);
 		return 1;
 	}
-	mfile = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE|MAP_POPULATE, fd, 0);
-	if(mfile == MAP_FAILED)
+
+	SF_INFO sndin_info = {0};
+	SNDFILE *sndin = sf_open(infile, SFM_READ, &sndin_info);
+	if(sndin == NULL)
 	{
-		perror("mmap");
+		fprintf(stderr, "Opening %s failed: %s\n", infile, sf_strerror(NULL));
+		return 1;
+	}
+	if(sndin_info.channels != 1)
+	{
+		fprintf(stderr, "File %s has %d channels. Only 1 channel supported.\n", infile, sndin_info.channels);
+		return 1;
+	}
+	if(sndin_info.samplerate != 8000)
+	{
+		fprintf(stderr, "File %s has sampling rate of %d Hz. Only 8000 Hz rate supported.\n", infile, sndin_info.samplerate);
 		return 1;
 	}
 
@@ -168,13 +172,8 @@ int main(int argc, char *argv[])
 	runtime.constants = &constants;
 	runtime2.constants = &constants2;
 
-	// Little-endian 16 bits signed
-
-	int16_t *samp_data = (int16_t*) mfile;
-	size_t num_samples = fsize / sizeof(int16_t);
-
 	// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N
-	size_t num_blocks = num_samples / GBLOCK_N + 1;
+	size_t num_blocks = sndin_info.frames / GBLOCK_N + 1;
 	double *magnitude1 = malloc(num_blocks * sizeof(double));
 	double *magnitude2 = malloc(num_blocks * sizeof(double));
 	size_t mag_index = 0;
@@ -185,10 +184,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	for(size_t i = 0; i < num_samples; i++)
+	short sample_;
+	while(sf_read_short(sndin, &sample_, 1) == 1)
 	{
 		int r = 0;
-		double sample = le16toh(samp_data[i]) / 32768.0;
+		double sample = ((unsigned short)sample_) / 32768.0;
 		// FIXME this code assumes both run_goertzel calls use the same GBLOCK_N within their runtime->constants
 		r = run_goertzel(sample, &runtime, &magnitude1[mag_index]);
 		r = run_goertzel(sample, &runtime2, &magnitude2[mag_index]);
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 
 	free(magnitude1);
 	free(magnitude2);
-	close(fd);
+	sf_close(sndin);
 
 	// 42 = ENOMSG = "No message of desired type"
 	// Seems appropriate.
