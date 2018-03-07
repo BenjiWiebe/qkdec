@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sndfile.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define SAMP_RATE	8000.0	//Hz, sampling rate
 #define GBLOCK_N	499.0		//SAMP_RATE / N: bin width
@@ -21,6 +22,8 @@
 #ifndef DBG_TARGET2
 #  define DBG_TARGET2	0
 #endif
+
+const bool silent = false;
 
 struct goertzel_constants {
 	double cosine;
@@ -105,7 +108,8 @@ int check_for_tones(double *mag1, int msec1, double *mag2, int msec2, size_t mag
 		{
 			if(needtone1)
 			{
-				printf("TONE 1 DETECTED\n");
+				if(!silent)
+					printf("TONE 1 DETECTED\n");
 				needtone1 = 0;
 			}
 		}
@@ -113,14 +117,16 @@ int check_for_tones(double *mag1, int msec1, double *mag2, int msec2, size_t mag
 		{
 			if(needtone2)
 			{
-				printf("TONE 2 DETECTED\n");
+				if(!silent)
+					printf("TONE 2 DETECTED\n");
 				needtone2 = 0;
 			}
 		}
 	}
 	if(!needtone2 && !needtone1)
 	{
-		printf("BOTH TONES DETECTED!\n");
+		if(!silent)
+			printf("BOTH TONES DETECTED!\n");
 		return 1;
 	}
 	return 0;
@@ -204,7 +210,8 @@ int main(int argc, char *argv[])
 
 	if(check_for_tones(magnitude1, 1000, magnitude2, 3000, mag_index))
 	{
-		printf("Page found in file %s\n", infile);
+		if(!silent)
+			printf("Page found in file %s\n", infile);
 		return 0;
 	}
 
